@@ -9,6 +9,7 @@ properties they are based on for the different content models.
 | `CreatorFacet`            | `creator`             | `creator.label`             | `author.label`           | —                        | —                        |
 | `LanguageFacet`           | `language`            | `language`¹                 | `language`¹              | `language`               | —                        |
 | `LocationFacet`           | `location`            | `location.label`            | `place.label`            | `location`               | —                        |
+| `OCRFacet`                | `has_ocr`             | `N/A`                       | `N/A`                    | `N/A`                    | `N/A`                    |
 | `PresentationSetFacet`    | `presentation_set`    | `presentation_set.label`    | `presentation_set.label` | `presentation_set.label` | `presentation_set.label` |
 | `PublicationStatusFacet`  | `publication_status`  | `rdf_type`                  | `rdf_type`               | `rdf_type`               | `rdf_type`               |
 | `PublisherFacet`          | `publisher`           | `publisher.label`           | —                        | `publisher.label`        | —                        |
@@ -27,6 +28,9 @@ property up to the first comma.
 
 ³ For these properties, `rights_statement_label()` is used to correlate a
 rightsstatement.org URL to a vocab.lib.umd.edu term and its label.
+
+⁴ For the OCR facet, the check for the presence of an OCR file is via creating a
+PCDMObjectResource and checking for an extracted text file.
 """  # noqa: E501
 
 import logging
@@ -36,8 +40,9 @@ from iso639 import Language, LanguageNotFoundError
 from plastron.models.letter import Letter
 from plastron.models.poster import Poster
 from plastron.models.umd import AdminSet, Item
-from plastron.namespaces import owl, rdfs, umdaccess
+from plastron.namespaces import owl, pcdmuse, rdfs, umdaccess
 from plastron.rdfmapping.properties import RDFDataProperty, RDFObjectProperty
+from plastron.repo.pcdm import PCDMObjectResource
 from plastron.validation.vocabularies import Vocabulary
 from rdflib import URIRef
 
@@ -216,6 +221,22 @@ class LocationFacet(FacetBase):
                 return [concat_values(self.ctx.obj.location)]
             case _:
                 return None
+
+
+class OCRFacet(FacetBase):
+    """OCR facet.
+
+    If the object has the `ocr` property, returns "Has OCR",
+    otherwise returns None"""
+
+    facet_name = 'has_ocr'
+
+    def get_values(self) -> list[str] | None:
+        pcdm_resource = PCDMObjectResource(self.ctx.repo, self.ctx.resource.path)
+        if pcdm_resource.get_file(rdf_type=pcdmuse.ExtractedText):
+            return ['Has OCR']
+        else:
+            return None
 
 
 class PresentationSetFacet(FacetBase):

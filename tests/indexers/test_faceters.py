@@ -4,14 +4,25 @@ import pytest
 from plastron.client import Client, Endpoint
 from plastron.models.pcdm import PCDMObject
 from plastron.models.umd import AdminSet
-from plastron.namespaces import rdf, dcterms, umdaccess
+from plastron.namespaces import dcterms, rdf, umdaccess
 from plastron.rdfmapping.properties import RDFDataProperty, RDFObjectProperty
 from plastron.rdfmapping.resources import RDFResource
 from plastron.repo import Repository, RepositoryResource
+from plastron.repo.pcdm import PCDMObjectResource
 from rdflib import Literal, URIRef
 
-from solrizer.faceters import language_name, rights_statement_label, concat_values, get_labels, FacetBase, \
-    VisibilityFacet, PublicationStatusFacet, AdminSetFacet, PresentationSetFacet
+from solrizer.faceters import (
+    AdminSetFacet,
+    FacetBase,
+    OCRFacet,
+    PresentationSetFacet,
+    PublicationStatusFacet,
+    VisibilityFacet,
+    concat_values,
+    get_labels,
+    language_name,
+    rights_statement_label,
+)
 from solrizer.indexers import IndexerContext
 
 
@@ -139,6 +150,23 @@ def test_admin_set_facet(get_mock_resource):
     )
     faceter = AdminSetFacet(ctx)
     assert faceter.get_values() == ['Test Admin Set']
+
+
+@pytest.mark.parametrize(
+    ('binary_resource', 'expected_values'),
+    [
+        (True, ['Has OCR']),
+        (False, None),
+    ]
+)
+def test_ocr_facet(get_mock_resource, datadir, binary_resource, expected_values):
+    def _get_values(mime_type=None, rdf_type=None):
+        return ['Has OCR'] if binary_resource else None
+
+    mock_faceter = MagicMock(spec=OCRFacet)
+    mock_faceter.get_values = _get_values
+
+    assert mock_faceter.get_values() == expected_values
 
 
 def test_presentation_set_attribute_error(get_mock_resource):

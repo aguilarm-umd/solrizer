@@ -1,5 +1,10 @@
 FROM python:3.14.9-slim
 
+# Install git
+RUN apt-get update && \
+    apt-get install -y git && \
+    apt-get clean
+
 EXPOSE 5000
 
 ENV FLASK_DEBUG=0
